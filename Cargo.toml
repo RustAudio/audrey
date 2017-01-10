@@ -1,0 +1,20 @@
+[package]
+name = "audio"
+version = "0.1.0"
+authors = ["mitchmindtree <mitchell.nordine@gmail.com>"]
+
+[dependencies]
+claxon = { optional = true, version = "0.2.1" }
+hound = { optional = true, version = "3.0.0" }
+lewton = { optional = true, git = "https://github.com/est31/lewton" }
+sample = "0.6.0"
+
+[dev-dependencies]
+cpal = "0.4.1"
+futures = "0.1.1"
+
+[features]
+default = ["flac", "ogg_vorbis", "wav"]
+flac = ["claxon"]
+ogg_vorbis = ["lewton"]
+wav = ["hound"]

@@ -1,0 +1,12 @@
+language: rust
+rust:
+    - nightly
+    - beta
+    - stable
+script:
+    - cargo build --verbose
+    - cargo test --verbose
+    - cargo test --no-default-features --features "flac" --verbose
+    - cargo test --no-default-features --features "ogg_vorbis" --verbose
+    - cargo test --no-default-features --features "wav" --verbose
+    - cargo doc --verbose

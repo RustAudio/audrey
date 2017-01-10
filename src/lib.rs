@@ -1,0 +1,57 @@
+pub extern crate sample;
+
+#[cfg(feature="flac")]
+pub extern crate claxon; // flac
+#[cfg(feature="wav")]
+pub extern crate hound; // wav
+#[cfg(feature="ogg_vorbis")]
+pub extern crate lewton; // ogg vorbis
+
+pub mod read;
+pub mod write;
+
+pub use read::{open, Reader};
+
+
+/// Enumerates the various formats supported by the crate.
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+pub enum Format {
+    #[cfg(feature="flac")]
+    Flac,
+    #[cfg(feature="ogg_vorbis")]
+    OggVorbis,
+    #[cfg(feature="wav")]
+    Wav,
+}
+
+
+impl Format {
+
+    /// Read a `Format` from the given `extension`.
+    ///
+    /// This function expects that the `extension` is lowercase ASCII, e.g "wav" or "ogg".
+    pub fn from_extension(extension: &str) -> Option<Self> {
+        match extension {
+            #[cfg(feature="flac")]
+            "flac" => Some(Format::Flac),
+            #[cfg(feature="ogg_vorbis")]
+            "ogg" | "oga" => Some(Format::OggVorbis),
+            #[cfg(feature="wav")]
+            "wav" | "wave" => Some(Format::Wav),
+            _ => None,
+        }
+    }
+
+    /// Return the most commonly used file extension associated with the `Format`.
+    pub fn extension(&self) -> &'static str {
+        match *self {
+            #[cfg(feature="flac")]
+            Format::Flac => "flac",
+            #[cfg(feature="wav")]
+            Format::Wav => "wav",
+            #[cfg(feature="ogg_vorbis")]
+            Format::OggVorbis => "ogg",
+        }
+    }
+
+}
