@@ -103,6 +103,7 @@ pub type BufFileReader = Reader<std::io::BufReader<std::fs::File>>;
 /// A description of the audio format that was read from file.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Description {
+    format: Format,
     channel_count: u32,
     sample_rate: u32,
 }
@@ -139,6 +140,11 @@ pub fn open<P>(file_path: P) -> Result<BufFileReader, OpenError>
 
 
 impl Description {
+
+    /// The format from which the audio will be read.
+    pub fn format(&self) -> Format {
+        self.format
+    }
 
     /// The number of channels of audio.
     ///
@@ -205,18 +211,6 @@ impl<R> Reader<R>
     where R: std::io::Read + std::io::Seek,
 {
 
-    /// The format from which the audio will be read.
-    pub fn format(&self) -> Format {
-        match *self {
-            #[cfg(feature="flac")]
-            Reader::Flac(_) => Format::Flac,
-            #[cfg(feature="ogg_vorbis")]
-            Reader::OggVorbis(_) => Format::OggVorbis,
-            #[cfg(feature="wav")]
-            Reader::Wav(_) => Format::Wav,
-        }
-    }
-
     /// A basic description of the audio being read.
     pub fn description(&self) -> Description {
         match *self {
@@ -225,6 +219,7 @@ impl<R> Reader<R>
             Reader::Flac(ref reader) => {
                 let info = reader.streaminfo();
                 Description {
+                    format: Format::Flac,
                     channel_count: info.channels as u32,
                     sample_rate: info.sample_rate,
                 }
@@ -233,6 +228,7 @@ impl<R> Reader<R>
             #[cfg(feature="ogg_vorbis")]
             Reader::OggVorbis(ref reader) => {
                 Description {
+                    format: Format::OggVorbis,
                     channel_count: reader.ident_hdr.audio_channels as u32,
                     sample_rate: reader.ident_hdr.audio_sample_rate as u32,
                 }
@@ -242,6 +238,7 @@ impl<R> Reader<R>
             Reader::Wav(ref reader) => {
                 let spec = reader.spec();
                 Description {
+                    format: Format::Wav,
                     channel_count: spec.channels as u32,
                     sample_rate: spec.sample_rate,
                 }
