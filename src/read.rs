@@ -249,7 +249,7 @@ impl<R> Reader<R>
             };
             try!(reader.seek(std::io::SeekFrom::Start(0)));
             match maybe_err {
-                Some(err) => reader_errors.push(Box::new(err)),
+                Some(err) => reader_errors.push(Box::new(err) as Box<std::error::Error>),
                 None => return Ok(Reader::Flac(try!(claxon::FlacReader::new(reader)))),
             }
         }
@@ -262,7 +262,7 @@ impl<R> Reader<R>
             };
             try!(reader.seek(std::io::SeekFrom::Start(0)));
             match maybe_err {
-                Some(err) => reader_errors.push(Box::new(err)),
+                Some(err) => reader_errors.push(Box::new(err) as Box<std::error::Error>),
                 None => return Ok(Reader::OggVorbis(try!(lewton::inside_ogg::OggStreamReader::new(reader)))),
             }
         }
