@@ -3,6 +3,10 @@ rust:
     - nightly
     - beta
     - stable
+addons:
+    apt:
+        packages:
+        - libasound2-dev
 script:
     - cargo build --verbose
     - cargo test --verbose
