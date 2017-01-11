@@ -1,4 +1,4 @@
-audio [![Build Status](https://travis-ci.org/mitchmindtree/m3u.svg?branch=master)](https://travis-ci.org/mitchmindtree/m3u)
+audio [![Build Status](https://travis-ci.org/rustaudio/audio.svg?branch=master)](https://travis-ci.org/rustaudio/audio)
 =====
 
 A crate to simplify reading, writing and converting between a range of audio formats.
