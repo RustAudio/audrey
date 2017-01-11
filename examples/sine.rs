@@ -8,7 +8,7 @@ extern crate audio;
 extern crate cpal;
 extern crate futures;
 
-#[cfg(all(feature="wav", feature="ogg_vorbis"))]
+#[cfg(all(feature="flac", feature="ogg_vorbis", feature="wav"))]
 fn main() {
     use futures::stream::Stream;
 
@@ -82,7 +82,7 @@ fn main() {
     event_loop.run();
 }
 
-#[cfg(not(all(feature="wav", feature="ogg_vorbis")))]
+#[cfg(not(all(feature="flac", feature="ogg_vorbis", feature="wav")))]
 fn main() {
     println!("This example requires all features to be enabled");
 }
