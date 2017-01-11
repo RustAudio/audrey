@@ -1,4 +1,4 @@
-audio [![Build Status](https://travis-ci.org/rustaudio/audio.svg?branch=master)](https://travis-ci.org/rustaudio/audio)
+audio [![Build Status](https://travis-ci.org/RustAudio/audio.svg?branch=master)](https://travis-ci.org/RustAudio/audio)
 =====
 
 A crate to simplify reading, writing and converting between a range of audio formats.
