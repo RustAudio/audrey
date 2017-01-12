@@ -109,12 +109,12 @@ pub struct Description {
 }
 
 
-/// Errors that might be returned from the `open` function.
+/// Errors that might be returned from the `Reader::new` function.
 #[derive(Debug)]
-pub enum OpenError {
+pub enum ReadError {
     Io(std::io::Error),
     Reader(FormatError),
-    UnsupportedFormat { extension: String },
+    UnsupportedFormat,
 }
 
 /// Format-specific errors that might occur when opening or reading from an audio file.
@@ -132,7 +132,7 @@ pub enum FormatError {
 /// Attempts to open an audio `Reader` from the file at the specified `Path`.
 ///
 /// The format is determined from the path's file extension.
-pub fn open<P>(file_path: P) -> Result<BufFileReader, OpenError>
+pub fn open<P>(file_path: P) -> Result<BufFileReader, ReadError>
     where P: AsRef<std::path::Path>,
 {
     BufFileReader::open(file_path)
@@ -168,41 +168,17 @@ impl BufFileReader {
 
     /// Attempts to open an audio `Reader` from the file at the specified `Path`.
     ///
-    /// The format is determined from the path's file extension.
-    pub fn open<P>(file_path: P) -> Result<Self, OpenError>
+    /// This function is a convenience wrapper around the `Reader::new` function.
+    ///
+    /// This function pays no attention to the `file_path`'s extension and instead attempts to read
+    /// a supported `Format` via the file header.
+    pub fn open<P>(file_path: P) -> Result<Self, ReadError>
         where P: AsRef<std::path::Path>,
     {
         let path = file_path.as_ref();
         let file = try!(std::fs::File::open(path));
         let reader = std::io::BufReader::new(file);
-        let extension = path.extension()
-            .and_then(|s| s.to_str())
-            .map_or_else(String::new, std::ascii::AsciiExt::to_ascii_lowercase);
-
-        let format = match Format::from_extension(&extension) {
-            Some(format) => format,
-            None => return Err(OpenError::UnsupportedFormat { extension: extension }),
-        };
-
-        let reader = match format {
-            #[cfg(feature="wav")]
-            Format::Wav => {
-                let reader = try!(hound::WavReader::new(reader));
-                Reader::Wav(reader)
-            },
-            #[cfg(feature="ogg_vorbis")]
-            Format::OggVorbis => {
-                let reader = try!(lewton::inside_ogg::OggStreamReader::new(reader));
-                Reader::OggVorbis(reader)
-            },
-            #[cfg(feature="flac")]
-            Format::Flac => {
-                let reader = try!(claxon::FlacReader::new(reader));
-                Reader::Flac(reader)
-            },
-        };
-
-        Ok(reader)
+        Reader::new(reader)
     }
 
 }
@@ -210,6 +186,68 @@ impl BufFileReader {
 impl<R> Reader<R>
     where R: std::io::Read + std::io::Seek,
 {
+
+    /// Attempts to read the format of the audio read by the given `reader` and returns the associated
+    /// `Reader` variant.
+    ///
+    /// The format is determined by attempting to construct each specific format reader until one
+    /// is successful.
+    pub fn new(mut reader: R) -> Result<Self, ReadError> {
+
+        #[cfg(feature="wav")]
+        {
+            let is_wav = match hound::WavReader::new(&mut reader) {
+                Err(hound::Error::FormatError(_)) => false,
+                Err(err) => return Err(err.into()),
+                Ok(_) => true,
+            };
+            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            if is_wav {
+                return Ok(Reader::Wav(try!(hound::WavReader::new(reader))));
+            }
+        }
+
+        #[cfg(feature="flac")]
+        {
+            let is_flac = match claxon::FlacReader::new(&mut reader) {
+                Err(claxon::Error::FormatError(_)) => false,
+                Err(err) => return Err(err.into()),
+                Ok(_) => true,
+            };
+            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            if is_flac {
+                return Ok(Reader::Flac(try!(claxon::FlacReader::new(reader))));
+            }
+        }
+
+        #[cfg(feature="ogg_vorbis")]
+        {
+            let is_ogg_vorbis = match lewton::inside_ogg::OggStreamReader::new(&mut reader) {
+                Err(lewton::VorbisError::OggError(_)) |
+                Err(lewton::VorbisError::BadHeader(lewton::header::HeaderReadError::NotVorbisHeader)) => false,
+                Err(err) => return Err(err.into()),
+                Ok(_) => true,
+            };
+            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            if is_ogg_vorbis {
+                return Ok(Reader::OggVorbis(try!(lewton::inside_ogg::OggStreamReader::new(reader))));
+            }
+        }
+
+        Err(ReadError::UnsupportedFormat)
+    }
+
+    /// The format from which the audio will be read.
+    pub fn format(&self) -> Format {
+        match *self {
+            #[cfg(feature="flac")]
+            Reader::Flac(_) => Format::Flac,
+            #[cfg(feature="ogg_vorbis")]
+            Reader::OggVorbis(_) => Format::OggVorbis,
+            #[cfg(feature="wav")]
+            Reader::Wav(_) => Format::Wav,
+        }
+    }
 
     /// A basic description of the audio being read.
     pub fn description(&self) -> Description {
@@ -443,17 +481,17 @@ impl From<hound::Error> for FormatError {
     }
 }
 
-impl<T> From<T> for OpenError
+impl<T> From<T> for ReadError
     where T: Into<FormatError>,
 {
     fn from(err: T) -> Self {
-        OpenError::Reader(err.into())
+        ReadError::Reader(err.into())
     }
 }
 
-impl From<std::io::Error> for OpenError {
+impl From<std::io::Error> for ReadError {
     fn from(err: std::io::Error) -> Self {
-        OpenError::Io(err)
+        ReadError::Io(err)
     }
 }
 
@@ -481,19 +519,19 @@ impl std::error::Error for FormatError {
     }
 }
 
-impl std::error::Error for OpenError {
+impl std::error::Error for ReadError {
     fn description(&self) -> &str {
         match *self {
-            OpenError::Io(ref err) => std::error::Error::description(err),
-            OpenError::Reader(ref err) => std::error::Error::description(err),
-            OpenError::UnsupportedFormat { .. } => "no supported format was detected",
+            ReadError::Io(ref err) => std::error::Error::description(err),
+            ReadError::Reader(ref err) => std::error::Error::description(err),
+            ReadError::UnsupportedFormat => "no supported format was detected",
         }
     }
     fn cause(&self) -> Option<&std::error::Error> {
         match *self {
-            OpenError::Io(ref err) => Some(err),
-            OpenError::Reader(ref err) => Some(err),
-            OpenError::UnsupportedFormat { .. } => None,
+            ReadError::Io(ref err) => Some(err),
+            ReadError::Reader(ref err) => Some(err),
+            ReadError::UnsupportedFormat => None,
         }
     }
 }
@@ -512,13 +550,13 @@ impl std::fmt::Display for FormatError {
     }
 }
 
-impl std::fmt::Display for OpenError {
+impl std::fmt::Display for ReadError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match *self {
-            OpenError::Io(ref err) => err.fmt(f),
-            OpenError::Reader(ref err) => err.fmt(f),
-            OpenError::UnsupportedFormat { ref extension } =>
-                write!(f, "{}: {}", std::error::Error::description(self), extension),
+            ReadError::Io(ref err) => err.fmt(f),
+            ReadError::Reader(ref err) => err.fmt(f),
+            ReadError::UnsupportedFormat =>
+                write!(f, "{}", std::error::Error::description(self)),
         }
     }
 }
