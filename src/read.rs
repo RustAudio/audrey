@@ -198,7 +198,8 @@ impl<R> Reader<R>
         {
             let is_wav = match hound::WavReader::new(&mut reader) {
                 Err(hound::Error::FormatError(_)) => false,
-                _ => true,
+                Err(err) => return Err(err.into()),
+                Ok(_) => true,
             };
             try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_wav {
@@ -210,7 +211,8 @@ impl<R> Reader<R>
         {
             let is_flac = match claxon::FlacReader::new(&mut reader) {
                 Err(claxon::Error::FormatError(_)) => false,
-                _ => true,
+                Err(err) => return Err(err.into()),
+                Ok(_) => true,
             };
             try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_flac {
@@ -223,7 +225,8 @@ impl<R> Reader<R>
             let is_ogg_vorbis = match lewton::inside_ogg::OggStreamReader::new(&mut reader) {
                 Err(lewton::VorbisError::OggError(_)) |
                 Err(lewton::VorbisError::BadHeader(lewton::header::HeaderReadError::NotVorbisHeader)) => false,
-                _ => true,
+                Err(err) => return Err(err.into()),
+                Ok(_) => true,
             };
             try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_ogg_vorbis {
