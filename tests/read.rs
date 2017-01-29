@@ -5,6 +5,7 @@ extern crate audio;
 const FLAC: &'static str = "samples/sine_440hz_stereo.flac";
 const OGG_VORBIS: &'static str = "samples/sine_440hz_stereo.ogg";
 const WAV: &'static str = "samples/sine_440hz_stereo.wav";
+const CAF_ALAC: &'static str = "samples/sine_440hz_stereo.caf";
 
 #[test]
 fn read() {
@@ -23,6 +24,11 @@ fn read() {
         audio::Reader::OggVorbis(_) => (),
         _ => panic!("Incorrect audio format"),
     }
+    let caf_alac = std::io::BufReader::new(std::fs::File::open(CAF_ALAC).unwrap());
+    match audio::Reader::new(caf_alac).unwrap() {
+        audio::Reader::CafAlac(_) => (),
+        _ => panic!("Incorrect audio format"),
+    }
 }
 
 #[test]
@@ -37,6 +43,10 @@ fn open() {
     }
     match audio::open(OGG_VORBIS).unwrap() {
         audio::Reader::OggVorbis(_) => (),
+        _ => panic!("Incorrect audio format"),
+    }
+    match audio::open(CAF_ALAC).unwrap() {
+        audio::Reader::CafAlac(_) => (),
         _ => panic!("Incorrect audio format"),
     }
 }

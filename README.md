@@ -15,6 +15,7 @@ Supported Formats
 | FLAC | "flac" | YES | - | flac | [claxon](https://crates.io/crates/claxon) |
 | Ogg Vorbis | "ogg", "oga" | YES | - | ogg_vorbis | [lewton](https://crates.io/crates/lewton) |
 | WAV | "wav", "wave" | YES | - | wav | [hound](https://crates.io/crates/hound) |
+| ALAC (within CAF) | YES | - | caf_alac | [caf](https://crates.io/crates/caf) [alac](https://crates.io/crates/alac) |
 
 All supported formats are enabled by default, however you can hand-pick only the
 formats you require using cargo features. For example, if you only required the

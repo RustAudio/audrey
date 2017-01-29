@@ -6,7 +6,12 @@ pub extern crate claxon; // flac
 pub extern crate hound; // wav
 #[cfg(feature="ogg_vorbis")]
 pub extern crate lewton; // ogg vorbis
+#[cfg(feature="caf")]
+pub extern crate caf;
+#[cfg(feature="alac")]
+pub extern crate alac;
 
+mod caf_alac;
 pub mod read;
 pub mod write;
 
@@ -22,6 +27,8 @@ pub enum Format {
     OggVorbis,
     #[cfg(feature="wav")]
     Wav,
+    #[cfg(feature="caf")]
+    CafAlac,
 }
 
 
@@ -38,6 +45,8 @@ impl Format {
             "ogg" | "oga" => Some(Format::OggVorbis),
             #[cfg(feature="wav")]
             "wav" | "wave" => Some(Format::Wav),
+            #[cfg(feature="caf")]
+            "caf" => Some(Format::CafAlac),
             _ => None,
         }
     }
@@ -51,6 +60,8 @@ impl Format {
             Format::Wav => "wav",
             #[cfg(feature="ogg_vorbis")]
             Format::OggVorbis => "ogg",
+            #[cfg(feature="caf")]
+            Format::CafAlac => "caf",
         }
     }
 
