@@ -253,13 +253,15 @@ impl<R> Reader<R>
         {
             let is_caf_alac = match super::caf_alac::AlacReader::new(&mut reader) {
                 Err(FormatError::Caf(CafError::NotCaf)) => false,
-                // TODO set false here when the format is not alac
                 Err(err) => return Err(err.into()),
-                Ok(_) => true,
+                // There is a CAF container, but no ALAC inside
+                Ok(None) => false,
+                // Everything is fine!
+                Ok(Some(_)) => true,
             };
             try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_caf_alac {
-                return Ok(Reader::CafAlac(try!(super::caf_alac::AlacReader::new(reader))));
+                return Ok(Reader::CafAlac(try!(super::caf_alac::AlacReader::new(reader)).unwrap()));
             }
         }
 

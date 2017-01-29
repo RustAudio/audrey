@@ -10,11 +10,16 @@ pub struct AlacReader<T> where T: Read + Seek {
 }
 
 impl<T> AlacReader<T> where T: Read + Seek {
-    pub fn new(rdr :T) -> Result<Self, FormatError> {
+    /// Creates a new AlacReader
+    ///
+    /// Returns Err(..) on IO errors, or if the stream is not CAF.
+    /// Returns Ok(Some(..)) if the format inside is ALAC,
+    /// None if its not ALAC.
+    pub fn new(rdr :T) -> Result<Option<Self>, FormatError> {
         let caf_reader = try!(CafPacketReader::new(rdr,
             vec![ChunkType::MagicCookie]));
         if caf_reader.audio_desc.format_id != FormatType::AppleLossless {
-            // TODO return an eror here that the CAF file does not contain ALAC
+            return Ok(None);
         }
         let cookie = caf_reader.chunks.iter()
             .filter_map(|c| match c {
@@ -24,10 +29,10 @@ impl<T> AlacReader<T> where T: Read + Seek {
             .next().unwrap();
         let decoder = try!(Decoder::from_cookie(&cookie)
             .map_err(|_| FormatError::Alac(())));
-        Ok(AlacReader {
+        Ok(Some(AlacReader {
             caf_reader : caf_reader,
             alac_decoder : decoder,
-        })
+        }))
     }
     pub fn read_packet(&mut self)
             -> Result<Option<Vec<i32>>, FormatError> {
