@@ -11,7 +11,9 @@ pub extern crate caf;
 #[cfg(feature="alac")]
 pub extern crate alac;
 
+#[cfg(feature="caf_alac")]
 mod caf_alac;
+
 pub mod read;
 pub mod write;
 
