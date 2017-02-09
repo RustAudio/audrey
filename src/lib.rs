@@ -29,7 +29,7 @@ pub enum Format {
     OggVorbis,
     #[cfg(feature="wav")]
     Wav,
-    #[cfg(feature="caf")]
+    #[cfg(feature="caf_alac")]
     CafAlac,
 }
 
@@ -62,7 +62,7 @@ impl Format {
             Format::Wav => "wav",
             #[cfg(feature="ogg_vorbis")]
             Format::OggVorbis => "ogg",
-            #[cfg(feature="caf")]
+            #[cfg(feature="caf_alac")]
             Format::CafAlac => "caf",
         }
     }
