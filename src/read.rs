@@ -10,6 +10,8 @@ use claxon;
 use hound;
 #[cfg(feature="ogg_vorbis")]
 use lewton;
+#[cfg(feature="caf")]
+use caf::{self, CafError};
 
 
 /// Types to which read samples may be converted via the `Reader::samples` method.
@@ -37,6 +39,8 @@ pub enum Reader<R>
     OggVorbis(lewton::inside_ogg::OggStreamReader<R>),
     #[cfg(feature="wav")]
     Wav(hound::WavReader<R>),
+    #[cfg(feature="caf_alac")]
+    CafAlac(super::caf_alac::AlacReader<R>),
 }
 
 
@@ -66,6 +70,13 @@ enum FormatSamples<'a, R>
 
     #[cfg(feature="wav")]
     Wav(WavSamples<'a, R>),
+
+    #[cfg(feature="caf_alac")]
+    CafAlac {
+        reader: &'a mut super::caf_alac::AlacReader<R>,
+        index: usize,
+        buffer: Vec<i32>,
+    },
 }
 
 // The variants of flac's supported sample bit depths.
@@ -126,6 +137,10 @@ pub enum FormatError {
     OggVorbis(lewton::VorbisError),
     #[cfg(feature="wav")]
     Wav(hound::Error),
+    #[cfg(feature="caf")]
+    Caf(caf::CafError),
+    #[cfg(feature="alac")]
+    Alac(()),
 }
 
 
@@ -234,6 +249,22 @@ impl<R> Reader<R>
             }
         }
 
+        #[cfg(feature="caf_alac")]
+        {
+            let is_caf_alac = match super::caf_alac::AlacReader::new(&mut reader) {
+                Err(FormatError::Caf(CafError::NotCaf)) => false,
+                Err(err) => return Err(err.into()),
+                // There is a CAF container, but no ALAC inside
+                Ok(None) => false,
+                // Everything is fine!
+                Ok(Some(_)) => true,
+            };
+            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            if is_caf_alac {
+                return Ok(Reader::CafAlac(try!(super::caf_alac::AlacReader::new(reader)).unwrap()));
+            }
+        }
+
         Err(ReadError::UnsupportedFormat)
     }
 
@@ -246,6 +277,8 @@ impl<R> Reader<R>
             Reader::OggVorbis(_) => Format::OggVorbis,
             #[cfg(feature="wav")]
             Reader::Wav(_) => Format::Wav,
+            #[cfg(feature="caf_alac")]
+            Reader::CafAlac(_) => Format::CafAlac,
         }
     }
 
@@ -279,6 +312,16 @@ impl<R> Reader<R>
                     format: Format::Wav,
                     channel_count: spec.channels as u32,
                     sample_rate: spec.sample_rate,
+                }
+            },
+
+            #[cfg(feature="caf_alac")]
+            Reader::CafAlac(ref reader) => {
+                let desc = &reader.caf_reader.audio_desc;
+                Description {
+                    format: Format::CafAlac,
+                    channel_count: desc.channels_per_frame as u32,
+                    sample_rate: (1.0 / desc.sample_rate) as u32,
                 }
             },
 
@@ -325,6 +368,12 @@ impl<R> Reader<R>
                 }
             },
 
+            #[cfg(feature="caf_alac")]
+            Reader::CafAlac(ref mut reader) => FormatSamples::CafAlac {
+                reader: reader,
+                index: 0,
+                buffer: Vec::new(),
+            },
         };
 
         Samples {
@@ -419,6 +468,27 @@ impl<'a, R, S> Iterator for Samples<'a, R, S>
                 }
             },
 
+            #[cfg(feature="caf_alac")]
+            FormatSamples::CafAlac { ref mut reader, ref mut index, ref mut buffer } => loop {
+
+                // Convert and return any pending samples.
+                if *index < buffer.len() {
+                    let sample = sample::Sample::to_sample(buffer[*index]);
+                    *index += 1;
+                    return Some(Ok(sample));
+                }
+
+                // If there are no samples left in the buffer, refill the buffer.
+                match reader.read_packet() {
+                    Ok(Some(packet)) => {
+                        std::mem::replace(buffer, packet);
+                        *index = 0;
+                    },
+                    Ok(None) => return None,
+                    Err(err) => return Some(Err(err.into())),
+                }
+            },
+
         }
     }
 }
@@ -481,6 +551,13 @@ impl From<hound::Error> for FormatError {
     }
 }
 
+#[cfg(feature="caf")]
+impl From<CafError> for FormatError {
+    fn from(err: CafError) -> Self {
+        FormatError::Caf(err)
+    }
+}
+
 impl<T> From<T> for ReadError
     where T: Into<FormatError>,
 {
@@ -505,6 +582,10 @@ impl std::error::Error for FormatError {
             FormatError::OggVorbis(ref err) => std::error::Error::description(err),
             #[cfg(feature="wav")]
             FormatError::Wav(ref err) => std::error::Error::description(err),
+            #[cfg(feature="caf")]
+            FormatError::Caf(ref err) => std::error::Error::description(err),
+            #[cfg(feature="alac")]
+            FormatError::Alac(_) => "Alac decode error",
         }
     }
     fn cause(&self) -> Option<&std::error::Error> {
@@ -515,6 +596,10 @@ impl std::error::Error for FormatError {
             FormatError::OggVorbis(ref err) => Some(err),
             #[cfg(feature="wav")]
             FormatError::Wav(ref err) => Some(err),
+            #[cfg(feature="caf")]
+            FormatError::Caf(ref err) => Some(err),
+            #[cfg(feature="alac")]
+            FormatError::Alac(_) => None,
         }
     }
 }
@@ -546,6 +631,11 @@ impl std::fmt::Display for FormatError {
             FormatError::OggVorbis(ref err) => err.fmt(f),
             #[cfg(feature="wav")]
             FormatError::Wav(ref err) => err.fmt(f),
+            #[cfg(feature="caf")]
+            FormatError::Caf(ref err) => err.fmt(f),
+            #[cfg(feature="alac")]
+            FormatError::Alac(_) => write!(f, "{}",
+                std::error::Error::description(self)),
         }
     }
 }

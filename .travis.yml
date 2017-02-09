@@ -13,4 +13,5 @@ script:
     - cargo test --no-default-features --features "flac" --verbose
     - cargo test --no-default-features --features "ogg_vorbis" --verbose
     - cargo test --no-default-features --features "wav" --verbose
+    - cargo test --no-default-features --features "caf_alac" --verbose
     - cargo doc --verbose
