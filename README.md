@@ -1,4 +1,4 @@
-audrey [![Build Status](https://travis-ci.org/RustAudio/audrey.svg?branch=master)](https://travis-ci.org/RustAudio/audrey) [![Crates.io](https://img.shields.io/crates/v/audrey.svg)](https://crates.io/crates/audrey) [![Crates.io](https://img.shields.io/crates/l/audrey.svg)](https://github.com/RustAudio/audrey/blob/master/LICENSE) [![docs.rs](https://docs.rs/audrey/badge.svg)](https://docs.rs/audrey/)
+audrey [![Build Status](https://travis-ci.org/RustAudio/audrey.svg?branch=master)](https://travis-ci.org/RustAudio/audrey) [![Crates.io](https://img.shields.io/crates/v/audrey.svg)](https://crates.io/crates/audrey) [![Crates.io](https://img.shields.io/crates/l/audrey.svg)](https://github.com/RustAudio/audrey/blob/master/LICENSE-MIT) [![docs.rs](https://docs.rs/audrey/badge.svg)](https://docs.rs/audrey/)
 ======
 
 A crate to simplify reading, writing and converting between a range of audio formats.
