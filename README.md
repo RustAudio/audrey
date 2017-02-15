@@ -1,5 +1,5 @@
-audio [![Build Status](https://travis-ci.org/RustAudio/audio.svg?branch=master)](https://travis-ci.org/RustAudio/audio)
-=====
+audrey [![Build Status](https://travis-ci.org/RustAudio/audrey.svg?branch=master)](https://travis-ci.org/RustAudio/audrey)
+======
 
 A crate to simplify reading, writing and converting between a range of audio formats.
 
