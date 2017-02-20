@@ -14,7 +14,7 @@ categories = ["multimedia::audio"]
 [dependencies]
 claxon = { optional = true, version = "0.2.1" }
 hound = { optional = true, version = "3.0.0" }
-lewton = { optional = true, version = "0.4.1" }
+lewton = { optional = true, version = "0.5" }
 caf = { optional = true, version = "0.1.0" }
 alac = { optional = true, version = "0.3.0" }
 sample = "0.6.0"
