@@ -4,7 +4,7 @@
 //! to generate samples, we read the samples from various file formats and convert them to the
 //! target `endpoint`'s default format.
 
-extern crate audio;
+extern crate audrey;
 extern crate cpal;
 extern crate futures;
 
@@ -13,9 +13,9 @@ fn main() {
     use futures::stream::Stream;
 
     // Use the audio crate to load the different audio formats and convert them to audio frames.
-    let mut sine_flac = audio::open("samples/sine_440hz_stereo.flac").unwrap();
-    let mut sine_ogg_vorbis = audio::open("samples/sine_440hz_stereo.ogg").unwrap();
-    let mut sine_wav = audio::open("samples/sine_440hz_stereo.wav").unwrap();
+    let mut sine_flac = audrey::open("samples/sine_440hz_stereo.flac").unwrap();
+    let mut sine_ogg_vorbis = audrey::open("samples/sine_440hz_stereo.ogg").unwrap();
+    let mut sine_wav = audrey::open("samples/sine_440hz_stereo.wav").unwrap();
     let sine_frames: Vec<[i16; 2]> = sine_flac.frames()
         .chain(sine_ogg_vorbis.frames())
         .chain(sine_wav.frames())
@@ -39,7 +39,7 @@ fn main() {
 
     // A function for writing to the `cpal::Buffer`, whatever the default sample type may be.
     fn write_to_buffer<S, I>(mut buffer: cpal::Buffer<S>, channels: usize, sine: &mut I)
-        where S: cpal::Sample + audio::sample::FromSample<i16>,
+        where S: cpal::Sample + audrey::sample::FromSample<i16>,
               I: Iterator<Item=[i16; 2]>,
     {
         match channels {
@@ -47,13 +47,13 @@ fn main() {
             // Mono
             1 => for (frame, sine_frame) in buffer.chunks_mut(channels).zip(sine) {
                 let sum = sine_frame[0] + sine_frame[1];
-                frame[0] = audio::sample::Sample::to_sample(sum);
+                frame[0] = audrey::sample::Sample::to_sample(sum);
             },
 
             // Stereo
             2 => for (frame, sine_frame) in buffer.chunks_mut(channels).zip(sine) {
                 for (sample, &sine_sample) in frame.iter_mut().zip(&sine_frame) {
-                    *sample = audio::sample::Sample::to_sample(sine_sample);
+                    *sample = audrey::sample::Sample::to_sample(sine_sample);
                 }
             },
 

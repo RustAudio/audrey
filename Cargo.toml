@@ -1,12 +1,20 @@
 [package]
-name = "audio"
+name = "audrey"
 version = "0.1.0"
 authors = ["mitchmindtree <mitchell.nordine@gmail.com>"]
+keywords = ["audio", "format", "decode", "encode", "convert"]
+description = "A crate to simplify reading, writing and converting between a range of audio formats."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/RustAudio/audrey.git"
+homepage = "https://github.com/RustAudio/audrey"
+documentation = "https://docs.rs/audrey"
+categories = ["multimedia::audio"]
 
 [dependencies]
 claxon = { optional = true, version = "0.2.1" }
 hound = { optional = true, version = "3.0.0" }
-lewton = { optional = true, git = "https://github.com/est31/lewton" }
+lewton = { optional = true, version = "0.5" }
 caf = { optional = true, version = "0.1.0" }
 alac = { optional = true, version = "0.3.0" }
 sample = "0.6.0"
