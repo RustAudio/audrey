@@ -12,15 +12,15 @@ documentation = "https://docs.rs/audrey"
 categories = ["multimedia::audio"]
 
 [dependencies]
-claxon = { optional = true, version = "0.2.1" }
-hound = { optional = true, version = "3.0.0" }
-lewton = { optional = true, version = "0.5" }
-caf = { optional = true, version = "0.1.0" }
-alac = { optional = true, version = "0.3.0" }
-sample = "0.6.0"
+claxon = { optional = true, version = "0.2" }
+hound = { optional = true, version = "3.0" }
+lewton = { optional = true, version = "0.7" }
+caf = { optional = true, version = "0.1" }
+alac = { optional = true, version = "0.3" }
+sample = "0.9"
 
 [dev-dependencies]
-cpal = "0.4.1"
+cpal = "0.4"
 futures = "0.1.1"
 
 [features]
