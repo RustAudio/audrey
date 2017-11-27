@@ -20,8 +20,7 @@ alac = { optional = true, version = "0.3" }
 sample = "0.9"
 
 [dev-dependencies]
-cpal = "0.4"
-futures = "0.1.1"
+cpal = "0.5"
 
 [features]
 default = ["flac", "ogg_vorbis", "wav", "caf_alac"]
