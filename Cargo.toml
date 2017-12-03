@@ -12,7 +12,7 @@ documentation = "https://docs.rs/audrey"
 categories = ["multimedia::audio"]
 
 [dependencies]
-claxon = { optional = true, version = "0.2" }
+claxon = { optional = true, version = "0.4" }
 hound = { optional = true, version = "3.0" }
 lewton = { optional = true, version = "0.7" }
 caf = { optional = true, version = "0.1" }
