@@ -59,7 +59,7 @@ enum FormatSamples<'a, R>
     where R: 'a + std::io::Read + std::io::Seek,
 {
     #[cfg(feature="flac")]
-    Flac(FlacSamples<'a, R>),
+    Flac(claxon::FlacSamples<&'a mut claxon::input::BufferedReader<R>>),
 
     #[cfg(feature="ogg_vorbis")]
     OggVorbis {
@@ -77,16 +77,6 @@ enum FormatSamples<'a, R>
         index: usize,
         buffer: Vec<i32>,
     },
-}
-
-// The variants of flac's supported sample bit depths.
-#[cfg(feature="flac")]
-enum FlacSamples<'a, R: 'a>
-    where R: std::io::Read,
-{
-    I8(claxon::FlacSamples<'a, R, i8>),
-    I16(claxon::FlacSamples<'a, R, i16>),
-    I32(claxon::FlacSamples<'a, R, i32>),
 }
 
 // The variants of hound's supported sample bit depths.
@@ -338,14 +328,7 @@ impl<R> Reader<R>
         let format = match *self {
 
             #[cfg(feature="flac")]
-            Reader::Flac(ref mut reader) => {
-                let info = reader.streaminfo();
-                match info.bits_per_sample {
-                    8 => FormatSamples::Flac(FlacSamples::I8(reader.samples())),
-                    16 => FormatSamples::Flac(FlacSamples::I16(reader.samples())),
-                    _ => FormatSamples::Flac(FlacSamples::I32(reader.samples())),
-                }
-            },
+            Reader::Flac(ref mut reader) => FormatSamples::Flac(reader.samples()),
 
             #[cfg(feature="ogg_vorbis")]
             Reader::OggVorbis(ref mut reader) => FormatSamples::OggVorbis {
@@ -412,20 +395,9 @@ impl<'a, R, S> Iterator for Samples<'a, R, S>
 
             #[cfg(feature="flac")]
             FormatSamples::Flac(ref mut flac_samples) => {
-
-                macro_rules! next_sample {
-                    ($samples:expr) => {{
-                        $samples.next().map(|sample| {
-                            sample.map_err(FormatError::Flac).map(sample::Sample::to_sample)
-                        })
-                    }};
-                }
-
-                match *flac_samples {
-                    FlacSamples::I8(ref mut samples) => next_sample!(samples),
-                    FlacSamples::I16(ref mut samples) => next_sample!(samples),
-                    FlacSamples::I32(ref mut samples) => next_sample!(samples),
-                }
+                flac_samples.next().map(|sample| {
+                    sample.map_err(FormatError::Flac).map(sample::Sample::to_sample)
+                })
             },
 
             #[cfg(feature="ogg_vorbis")]

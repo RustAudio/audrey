@@ -6,11 +6,9 @@
 
 extern crate audrey;
 extern crate cpal;
-extern crate futures;
 
 #[cfg(all(feature="flac", feature="ogg_vorbis", feature="wav"))]
 fn main() {
-    use futures::stream::Stream;
 
     // Use the audio crate to load the different audio formats and convert them to audio frames.
     let mut sine_flac = audrey::open("samples/sine_440hz_stereo.flac").unwrap();
@@ -23,19 +21,12 @@ fn main() {
         .collect();
     let mut sine = sine_frames.into_iter().cycle();
 
-    let endpoint = cpal::get_default_endpoint().expect("Failed to get endpoint");
-    let format = endpoint.get_supported_formats_list().unwrap().next().expect("Failed to get endpoint format");
+    let endpoint = cpal::default_endpoint().expect("Failed to get endpoint");
+    let format_range = endpoint.supported_formats().unwrap().next().expect("Failed to get endpoint format");
+    let format = format_range.with_max_samples_rate();
 
-    struct Executor;
-    impl futures::task::Executor for Executor {
-        fn execute(&self, r: futures::task::Run) {
-            r.run();
-        }
-    }
-
-    let executor = std::sync::Arc::new(Executor);
     let event_loop = cpal::EventLoop::new();
-    let (mut voice, stream) = cpal::Voice::new(&endpoint, &format, &event_loop).expect("Failed to create a voice");
+    let voice_id = event_loop.build_voice(&endpoint, &format).expect("Failed to create a voice");
 
     // A function for writing to the `cpal::Buffer`, whatever the default sample type may be.
     fn write_to_buffer<S, I>(mut buffer: cpal::Buffer<S>, channels: usize, sine: &mut I)
@@ -61,25 +52,15 @@ fn main() {
         }
     }
 
-    futures::task::spawn(stream.for_each(move |buffer| -> Result<_, ()> {
+    event_loop.play(voice_id);
+
+    event_loop.run(move |_voice_id, buffer| {
         match buffer {
             cpal::UnknownTypeBuffer::U16(buffer) => write_to_buffer(buffer, format.channels.len(), &mut sine),
             cpal::UnknownTypeBuffer::I16(buffer) => write_to_buffer(buffer, format.channels.len(), &mut sine),
             cpal::UnknownTypeBuffer::F32(buffer) => write_to_buffer(buffer, format.channels.len(), &mut sine),
         };
-        Ok(())
-    })).execute(executor);
-
-    std::thread::spawn(move || {
-        loop {
-            voice.play();
-            std::thread::sleep(std::time::Duration::from_secs(1));
-            voice.pause();
-            std::thread::sleep(std::time::Duration::from_millis(500));
-        }
     });
-
-    event_loop.run();
 }
 
 #[cfg(not(all(feature="flac", feature="ogg_vorbis", feature="wav")))]
