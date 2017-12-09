@@ -9,22 +9,25 @@ extern crate cpal;
 
 #[cfg(all(feature="flac", feature="ogg_vorbis", feature="wav"))]
 fn main() {
-
     // Use the audio crate to load the different audio formats and convert them to audio frames.
     let mut sine_flac = audrey::open("samples/sine_440hz_stereo.flac").unwrap();
     let mut sine_ogg_vorbis = audrey::open("samples/sine_440hz_stereo.ogg").unwrap();
     let mut sine_wav = audrey::open("samples/sine_440hz_stereo.wav").unwrap();
-    let sine_frames: Vec<[i16; 2]> = sine_flac.frames()
-        .chain(sine_ogg_vorbis.frames())
-        .chain(sine_wav.frames())
-        .map(Result::unwrap)
-        .collect();
-    let mut sine = sine_frames.into_iter().cycle();
 
+    // Chain together the frame-yielding iterators and collect them to create a cycling iterator.
+    let sine_buffer = sine_flac.frames::<[i16; 2]>()
+        .chain(sine_ogg_vorbis.frames::<[i16; 2]>())
+        .chain(sine_wav.frames::<[i16; 2]>())
+        .map(Result::unwrap)
+        .map(|f| audrey::sample::Frame::scale_amp(f, 0.25)) // Scale down the amp to a friendly level.
+        .collect::<Vec<_>>();
+    let mut sine = sine_buffer.iter().cloned().cycle();
+
+    // Setup the output device stream.
     let endpoint = cpal::default_endpoint().expect("Failed to get endpoint");
     let format_range = endpoint.supported_formats().unwrap().next().expect("Failed to get endpoint format");
-    let format = format_range.with_max_samples_rate();
-
+    let mut format = format_range.with_max_samples_rate();
+    format.samples_rate = cpal::SamplesRate(44_100);
     let event_loop = cpal::EventLoop::new();
     let voice_id = event_loop.build_voice(&endpoint, &format).expect("Failed to create a voice");
 
