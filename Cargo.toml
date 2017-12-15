@@ -1,6 +1,6 @@
 [package]
 name = "audrey"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["mitchmindtree <mitchell.nordine@gmail.com>"]
 keywords = ["audio", "format", "decode", "encode", "convert"]
 description = "A crate to simplify reading, writing and converting between a range of audio formats."
