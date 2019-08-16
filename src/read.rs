@@ -293,7 +293,7 @@ where
             #[cfg(feature = "ogg_vorbis")]
             Reader::OggVorbis(ref reader) => Description {
                 format: Format::OggVorbis,
-                channel_count: reader.ident_hdr.audio_channels as u32,
+                channel_count: u32::from(reader.ident_hdr.audio_channels),
                 sample_rate: reader.ident_hdr.audio_sample_rate as u32,
             },
 
@@ -302,7 +302,7 @@ where
                 let spec = reader.spec();
                 Description {
                     format: Format::Wav,
-                    channel_count: spec.channels as u32,
+                    channel_count: u32::from(spec.channels),
                     sample_rate: spec.sample_rate,
                 }
             }
@@ -333,7 +333,7 @@ where
 
             #[cfg(feature = "ogg_vorbis")]
             Reader::OggVorbis(ref mut reader) => FormatSamples::OggVorbis {
-                reader: reader,
+                reader,
                 index: 0,
                 buffer: Vec::new(),
             },
@@ -355,14 +355,14 @@ where
 
             #[cfg(feature = "caf_alac")]
             Reader::CafAlac(ref mut reader) => FormatSamples::CafAlac {
-                reader: reader,
+                reader,
                 index: 0,
                 buffer: Vec::new(),
             },
         };
 
         Samples {
-            format: format,
+            format,
             sample: std::marker::PhantomData,
         }
     }
@@ -465,7 +465,7 @@ where
                         *index = 0;
                     }
                     Ok(None) => return None,
-                    Err(err) => return Some(Err(err.into())),
+                    Err(err) => return Some(Err(err)),
                 }
             },
         }
@@ -490,7 +490,7 @@ where
         let frame = F::from_fn(|_| match self.samples.next() {
             Some(Ok(sample)) => sample,
             Some(Err(error)) => {
-                result = FrameConstruction::Err(error.into());
+                result = FrameConstruction::Err(error);
                 <F::Sample as sample::Sample>::equilibrium()
             }
             None => {

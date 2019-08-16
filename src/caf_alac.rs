@@ -30,14 +30,14 @@ where
             .chunks
             .iter()
             .filter_map(|c| match c {
-                &CafChunk::MagicCookie(ref d) => Some(d.clone()),
+                CafChunk::MagicCookie(ref d) => Some(d.clone()),
                 _ => None,
             })
             .next()
             .unwrap();
         let decoder = try!(Decoder::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
         Ok(Some(AlacReader {
-            caf_reader: caf_reader,
+            caf_reader,
             alac_decoder: decoder,
         }))
     }

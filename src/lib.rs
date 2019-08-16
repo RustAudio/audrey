@@ -51,8 +51,8 @@ impl Format {
     }
 
     /// Return the most commonly used file extension associated with the `Format`.
-    pub fn extension(&self) -> &'static str {
-        match *self {
+    pub fn extension(self) -> &'static str {
+        match self {
             #[cfg(feature = "flac")]
             Format::Flac => "flac",
             #[cfg(feature = "wav")]
