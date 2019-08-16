@@ -34,7 +34,8 @@ where
             })
             .next()
             .unwrap();
-        let stream_info = r#try!(StreamInfo::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
+        let stream_info =
+            r#try!(StreamInfo::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
         Ok(Some(AlacReader {
             caf_reader,
             alac_decoder: Decoder::new(stream_info),
