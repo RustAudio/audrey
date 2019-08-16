@@ -2,10 +2,9 @@
 //!
 //! This example is adapted from the cpal `beep.rs` example, however rather than using an iterator
 //! to generate samples, we read the samples from various file formats and convert them to the
-//! target `endpoint`'s default format.
+//! target `device`'s default format.
 
-extern crate audrey;
-extern crate cpal;
+use cpal::traits::{DeviceTrait, EventLoopTrait, HostTrait};
 
 #[cfg(all(feature = "flac", feature = "ogg_vorbis", feature = "wav"))]
 fn main() {
@@ -25,21 +24,24 @@ fn main() {
     let mut sine = sine_buffer.iter().cloned().cycle();
 
     // Setup the output device stream.
-    let endpoint = cpal::default_endpoint().expect("Failed to get endpoint");
-    let format_range = endpoint
-        .supported_formats()
+    let host = cpal::default_host();
+    let device = host
+        .default_output_device()
+        .expect("no output device available");
+    let format_range = device
+        .supported_output_formats()
         .unwrap()
         .next()
         .expect("Failed to get endpoint format");
-    let mut format = format_range.with_max_samples_rate();
-    format.samples_rate = cpal::SamplesRate(44_100);
-    let event_loop = cpal::EventLoop::new();
-    let voice_id = event_loop
-        .build_voice(&endpoint, &format)
+    let mut format = format_range.with_max_sample_rate();
+    format.sample_rate = cpal::SampleRate(44_100);
+    let event_loop = host.event_loop();
+    let stream_id = event_loop
+        .build_output_stream(&device, &format)
         .expect("Failed to create a voice");
 
     // A function for writing to the `cpal::Buffer`, whatever the default sample type may be.
-    fn write_to_buffer<S, I>(mut buffer: cpal::Buffer<S>, channels: usize, sine: &mut I)
+    fn write_to_buffer<S, I>(mut buffer: cpal::OutputBuffer<S>, channels: usize, sine: &mut I)
     where
         S: cpal::Sample + audrey::sample::FromSample<i16>,
         I: Iterator<Item = [i16; 2]>,
@@ -66,20 +68,31 @@ fn main() {
         }
     }
 
-    event_loop.play(voice_id);
+    event_loop
+        .play_stream(stream_id)
+        .expect("failed to play_stream");
 
-    event_loop.run(move |_voice_id, buffer| {
-        match buffer {
-            cpal::UnknownTypeBuffer::U16(buffer) => {
-                write_to_buffer(buffer, format.channels.len(), &mut sine)
-            }
-            cpal::UnknownTypeBuffer::I16(buffer) => {
-                write_to_buffer(buffer, format.channels.len(), &mut sine)
-            }
-            cpal::UnknownTypeBuffer::F32(buffer) => {
-                write_to_buffer(buffer, format.channels.len(), &mut sine)
+    event_loop.run(move |stream_id, buffer| {
+        let stream_data = match buffer {
+            Ok(data) => data,
+            Err(err) => {
+                eprintln!("an error occurred on stream {:?}: {}", stream_id, err);
+                return;
             }
         };
+
+        match stream_data {
+            cpal::StreamData::Output {
+                buffer: cpal::UnknownTypeOutputBuffer::U16(buffer),
+            } => write_to_buffer(buffer, usize::from(format.channels), &mut sine),
+            cpal::StreamData::Output {
+                buffer: cpal::UnknownTypeOutputBuffer::I16(buffer),
+            } => write_to_buffer(buffer, usize::from(format.channels), &mut sine),
+            cpal::StreamData::Output {
+                buffer: cpal::UnknownTypeOutputBuffer::F32(buffer),
+            } => write_to_buffer(buffer, usize::from(format.channels), &mut sine),
+            _ => (),
+        }
     });
 }
 
