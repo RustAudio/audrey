@@ -22,3 +22,4 @@ rusti.sh
 /examples/**/target
 
 Cargo.lock
+/rls*.log
