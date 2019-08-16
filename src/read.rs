@@ -2,7 +2,7 @@
 
 use sample;
 use std;
-use Format;
+use crate::Format;
 
 #[cfg(feature = "caf")]
 use caf::{self, CafError};
@@ -182,7 +182,7 @@ impl BufFileReader {
         P: AsRef<std::path::Path>,
     {
         let path = file_path.as_ref();
-        let file = try!(std::fs::File::open(path));
+        let file = r#try!(std::fs::File::open(path));
         let reader = std::io::BufReader::new(file);
         Reader::new(reader)
     }
@@ -205,9 +205,9 @@ where
                 Err(err) => return Err(err.into()),
                 Ok(_) => true,
             };
-            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_wav {
-                return Ok(Reader::Wav(try!(hound::WavReader::new(reader))));
+                return Ok(Reader::Wav(r#try!(hound::WavReader::new(reader))));
             }
         }
 
@@ -218,9 +218,9 @@ where
                 Err(err) => return Err(err.into()),
                 Ok(_) => true,
             };
-            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_flac {
-                return Ok(Reader::Flac(try!(claxon::FlacReader::new(reader))));
+                return Ok(Reader::Flac(r#try!(claxon::FlacReader::new(reader))));
             }
         }
 
@@ -234,9 +234,9 @@ where
                 Err(err) => return Err(err.into()),
                 Ok(_) => true,
             };
-            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_ogg_vorbis {
-                return Ok(Reader::OggVorbis(try!(
+                return Ok(Reader::OggVorbis(r#try!(
                     lewton::inside_ogg::OggStreamReader::new(reader)
                 )));
             }
@@ -252,10 +252,10 @@ where
                 // Everything is fine!
                 Ok(Some(_)) => true,
             };
-            try!(reader.seek(std::io::SeekFrom::Start(0)));
+            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
             if is_caf_alac {
                 return Ok(Reader::CafAlac(
-                    try!(super::caf_alac::AlacReader::new(reader)).unwrap(),
+                    r#try!(super::caf_alac::AlacReader::new(reader)).unwrap(),
                 ));
             }
         }

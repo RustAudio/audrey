@@ -22,7 +22,7 @@ where
     /// Returns Ok(Some(..)) if the format inside is ALAC,
     /// None if its not ALAC.
     pub fn new(rdr: T) -> Result<Option<Self>, FormatError> {
-        let caf_reader = try!(CafPacketReader::new(rdr, vec![ChunkType::MagicCookie]));
+        let caf_reader = r#try!(CafPacketReader::new(rdr, vec![ChunkType::MagicCookie]));
         if caf_reader.audio_desc.format_id != FormatType::AppleLossless {
             return Ok(None);
         }
@@ -35,7 +35,7 @@ where
             })
             .next()
             .unwrap();
-        let decoder = try!(Decoder::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
+        let decoder = r#try!(Decoder::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
         Ok(Some(AlacReader {
             caf_reader,
             alac_decoder: decoder,
@@ -48,11 +48,11 @@ where
                 * self.caf_reader.audio_desc.channels_per_frame)
                 as usize
         ];
-        let packet = match try!(self.caf_reader.next_packet()) {
+        let packet = match r#try!(self.caf_reader.next_packet()) {
             Some(pck) => pck,
             None => return Ok(None),
         };
-        try!(self
+        r#try!(self
             .alac_decoder
             .decode_packet(&packet, &mut output_buf)
             .map_err(|_| FormatError::Alac(())));

@@ -17,7 +17,7 @@ mod caf_alac;
 pub mod read;
 pub mod write;
 
-pub use read::{open, Reader};
+pub use crate::read::{open, Reader};
 
 /// Enumerates the various formats supported by the crate.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
