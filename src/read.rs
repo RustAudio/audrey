@@ -560,7 +560,7 @@ impl std::error::Error for FormatError {
             FormatError::Alac(_) => "Alac decode error",
         }
     }
-    fn cause(&self) -> Option<&std::error::Error> {
+    fn cause(&self) -> Option<&dyn std::error::Error> {
         match *self {
             #[cfg(feature="flac")]
             FormatError::Flac(ref err) => Some(err),
@@ -584,7 +584,7 @@ impl std::error::Error for ReadError {
             ReadError::UnsupportedFormat => "no supported format was detected",
         }
     }
-    fn cause(&self) -> Option<&std::error::Error> {
+    fn cause(&self) -> Option<&dyn std::error::Error> {
         match *self {
             ReadError::Io(ref err) => Some(err),
             ReadError::Reader(ref err) => Some(err),
