@@ -14,11 +14,11 @@ edition = "2018"
 
 [dependencies]
 claxon = { optional = true, version = "0.4" }
-hound = { optional = true, version = "3.0" }
-lewton = { optional = true, version = "0.7" }
+hound = { optional = true, version = "3" }
+lewton = { optional = true, version = "0.9" }
 caf = { optional = true, version = "0.1" }
 alac = { optional = true, version = "0.3" }
-sample = "0.9"
+sample = "0.10"
 
 [dev-dependencies]
 cpal = "0.5"
