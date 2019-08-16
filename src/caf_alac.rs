@@ -1,7 +1,6 @@
 use super::read::FormatError;
 use alac::{Decoder, StreamInfo};
-use caf::chunks::CafChunk;
-use caf::{CafPacketReader, ChunkType, FormatType};
+use caf::{chunks::CafChunk, CafPacketReader, ChunkType, FormatType};
 use std::io::{Read, Seek};
 
 pub struct AlacReader<T>

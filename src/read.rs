@@ -1,7 +1,5 @@
 //! Items for reading and opening file formats from file.
 
-use sample;
-use std;
 use crate::Format;
 
 #[cfg(feature = "caf")]
