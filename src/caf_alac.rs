@@ -1,5 +1,5 @@
 use super::read::FormatError;
-use alac::Decoder;
+use alac::{Decoder, StreamInfo};
 use caf::chunks::CafChunk;
 use caf::{CafPacketReader, ChunkType, FormatType};
 use std::io::{Read, Seek};
@@ -35,10 +35,10 @@ where
             })
             .next()
             .unwrap();
-        let decoder = r#try!(Decoder::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
+        let stream_info = r#try!(StreamInfo::from_cookie(&cookie).map_err(|_| FormatError::Alac(())));
         Ok(Some(AlacReader {
             caf_reader,
-            alac_decoder: decoder,
+            alac_decoder: Decoder::new(stream_info),
         }))
     }
     pub fn read_packet(&mut self) -> Result<Option<Vec<i32>>, FormatError> {
