@@ -10,6 +10,7 @@ repository = "https://github.com/RustAudio/audrey.git"
 homepage = "https://github.com/RustAudio/audrey"
 documentation = "https://docs.rs/audrey"
 categories = ["multimedia::audio"]
+edition = "2018"
 
 [dependencies]
 claxon = { optional = true, version = "0.4" }
