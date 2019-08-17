@@ -180,7 +180,7 @@ impl BufFileReader {
         P: AsRef<std::path::Path>,
     {
         let path = file_path.as_ref();
-        let file = r#try!(std::fs::File::open(path));
+        let file = std::fs::File::open(path)?;
         let reader = std::io::BufReader::new(file);
         Reader::new(reader)
     }
@@ -203,9 +203,9 @@ where
                 Err(err) => return Err(err.into()),
                 Ok(_) => true,
             };
-            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
+            reader.seek(std::io::SeekFrom::Start(0))?;
             if is_wav {
-                return Ok(Reader::Wav(r#try!(hound::WavReader::new(reader))));
+                return Ok(Reader::Wav(hound::WavReader::new(reader)?));
             }
         }
 
@@ -216,9 +216,9 @@ where
                 Err(err) => return Err(err.into()),
                 Ok(_) => true,
             };
-            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
+            reader.seek(std::io::SeekFrom::Start(0))?;
             if is_flac {
-                return Ok(Reader::Flac(r#try!(claxon::FlacReader::new(reader))));
+                return Ok(Reader::Flac(claxon::FlacReader::new(reader)?));
             }
         }
 
@@ -232,11 +232,11 @@ where
                 Err(err) => return Err(err.into()),
                 Ok(_) => true,
             };
-            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
+            reader.seek(std::io::SeekFrom::Start(0))?;
             if is_ogg_vorbis {
-                return Ok(Reader::OggVorbis(r#try!(
-                    lewton::inside_ogg::OggStreamReader::new(reader)
-                )));
+                return Ok(Reader::OggVorbis(lewton::inside_ogg::OggStreamReader::new(
+                    reader,
+                )?));
             }
         }
 
@@ -250,10 +250,10 @@ where
                 // Everything is fine!
                 Ok(Some(_)) => true,
             };
-            r#try!(reader.seek(std::io::SeekFrom::Start(0)));
+            reader.seek(std::io::SeekFrom::Start(0))?;
             if is_caf_alac {
                 return Ok(Reader::CafAlac(
-                    r#try!(super::caf_alac::AlacReader::new(reader)).unwrap(),
+                    super::caf_alac::AlacReader::new(reader)?.unwrap(),
                 ));
             }
         }
