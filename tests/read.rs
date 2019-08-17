@@ -1,4 +1,4 @@
-#![cfg(all(feature="flac", feature="ogg_vorbis", feature="wav"))]
+#![cfg(all(feature = "flac", feature = "ogg_vorbis", feature = "wav"))]
 
 extern crate audrey;
 
@@ -54,7 +54,8 @@ fn open() {
 #[test]
 fn open_and_read_samples() {
     fn read_samples<P>(path: P) -> usize
-        where P: AsRef<std::path::Path>,
+    where
+        P: AsRef<std::path::Path>,
     {
         let mut reader = audrey::open(path).unwrap();
         reader.samples::<i16>().map(Result::unwrap).count()
