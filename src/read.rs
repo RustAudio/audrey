@@ -16,6 +16,7 @@ pub trait Sample:
     sample::Sample
     + sample::FromSample<i8>
     + sample::FromSample<i16>
+    + sample::FromSample<sample::I24>
     + sample::FromSample<i32>
     + sample::FromSample<f32>
 {
@@ -25,6 +26,7 @@ impl<T> Sample for T where
     T: sample::Sample
         + sample::FromSample<i8>
         + sample::FromSample<i16>
+        + sample::FromSample<sample::I24>
         + sample::FromSample<i32>
         + sample::FromSample<f32>
 {
@@ -87,6 +89,7 @@ where
 enum WavSamples<'a, R: 'a> {
     I8(hound::WavSamples<'a, R, i8>),
     I16(hound::WavSamples<'a, R, i16>),
+    I24(hound::WavSamples<'a, R, i32>),
     I32(hound::WavSamples<'a, R, i32>),
     F32(hound::WavSamples<'a, R, f32>),
 }
@@ -343,6 +346,9 @@ where
                     hound::SampleFormat::Int => match spec.bits_per_sample {
                         8 => FormatSamples::Wav(WavSamples::I8(reader.samples())),
                         16 => FormatSamples::Wav(WavSamples::I16(reader.samples())),
+                        24 => FormatSamples::Wav(WavSamples::I24(reader.samples())),
+                        32 => FormatSamples::Wav(WavSamples::I32(reader.samples())),
+                        // Should there be an error here?
                         _ => FormatSamples::Wav(WavSamples::I32(reader.samples())),
                     },
                     hound::SampleFormat::Float => {
@@ -438,6 +444,12 @@ where
                 match *wav_samples {
                     WavSamples::I8(ref mut samples) => next_sample!(samples),
                     WavSamples::I16(ref mut samples) => next_sample!(samples),
+                    WavSamples::I24(ref mut samples) => samples.next().map(|sample| {
+                        sample
+                            .map_err(FormatError::Wav)
+                            .map(sample::I24::new_unchecked)
+                            .map(sample::Sample::to_sample)
+                    }),
                     WavSamples::I32(ref mut samples) => next_sample!(samples),
                     WavSamples::F32(ref mut samples) => next_sample!(samples),
                 }
