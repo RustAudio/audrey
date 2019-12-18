@@ -64,7 +64,13 @@ where
     R: 'a + std::io::Read + std::io::Seek,
 {
     #[cfg(feature = "flac")]
-    Flac(claxon::FlacSamples<&'a mut claxon::input::BufferedReader<R>>),
+    Flac {
+        sample_bits: u32,
+        flac_samples: claxon::FlacSamples<&'a mut claxon::input::BufferedReader<R>>,
+    },
+
+    #[cfg(feature = "flac")]
+    FlacUnsupportedSampleBits(u32),
 
     #[cfg(feature = "ogg_vorbis")]
     OggVorbis {
@@ -75,6 +81,9 @@ where
 
     #[cfg(feature = "wav")]
     Wav(WavSamples<'a, R>),
+
+    #[cfg(feature = "wav")]
+    WavUnsupportedSampleBits(u16),
 
     #[cfg(feature = "caf_alac")]
     CafAlac {
@@ -129,10 +138,14 @@ pub enum ReadError {
 pub enum FormatError {
     #[cfg(feature = "flac")]
     Flac(claxon::Error),
+    #[cfg(feature = "flac")]
+    FlacUnsupportedSampleBits(u32),
     #[cfg(feature = "ogg_vorbis")]
     OggVorbis(lewton::VorbisError),
     #[cfg(feature = "wav")]
     Wav(hound::Error),
+    #[cfg(feature = "wav")]
+    WavUnsupportedSampleBits(u16),
     #[cfg(feature = "caf")]
     Caf(caf::CafError),
     #[cfg(feature = "alac")]
@@ -330,7 +343,17 @@ where
     {
         let format = match *self {
             #[cfg(feature = "flac")]
-            Reader::Flac(ref mut reader) => FormatSamples::Flac(reader.samples()),
+            Reader::Flac(ref mut reader) => {
+                let sample_bits = reader.streaminfo().bits_per_sample;
+                if sample_bits > 32 {
+                    FormatSamples::FlacUnsupportedSampleBits(sample_bits)
+                } else {
+                    FormatSamples::Flac {
+                        sample_bits,
+                        flac_samples: reader.samples(),
+                    }
+                }
+            }
 
             #[cfg(feature = "ogg_vorbis")]
             Reader::OggVorbis(ref mut reader) => FormatSamples::OggVorbis {
@@ -348,8 +371,7 @@ where
                         16 => FormatSamples::Wav(WavSamples::I16(reader.samples())),
                         24 => FormatSamples::Wav(WavSamples::I24(reader.samples())),
                         32 => FormatSamples::Wav(WavSamples::I32(reader.samples())),
-                        // Should there be an error here?
-                        _ => FormatSamples::Wav(WavSamples::I32(reader.samples())),
+                        _ => FormatSamples::WavUnsupportedSampleBits(spec.bits_per_sample),
                     },
                     hound::SampleFormat::Float => {
                         FormatSamples::Wav(WavSamples::F32(reader.samples()))
@@ -399,11 +421,20 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.format {
             #[cfg(feature = "flac")]
-            FormatSamples::Flac(ref mut flac_samples) => flac_samples.next().map(|sample| {
+            FormatSamples::Flac {
+                sample_bits,
+                ref mut flac_samples,
+            } => flac_samples.next().map(|sample| {
                 sample
                     .map_err(FormatError::Flac)
+                    .map(|sample| sample << (32 - sample_bits))
                     .map(sample::Sample::to_sample)
             }),
+
+            #[cfg(feature = "flac")]
+            FormatSamples::FlacUnsupportedSampleBits(sample_bits) => {
+                Some(Err(FormatError::FlacUnsupportedSampleBits(sample_bits)))
+            }
 
             #[cfg(feature = "ogg_vorbis")]
             FormatSamples::OggVorbis {
@@ -453,6 +484,11 @@ where
                     WavSamples::I32(ref mut samples) => next_sample!(samples),
                     WavSamples::F32(ref mut samples) => next_sample!(samples),
                 }
+            }
+
+            #[cfg(feature = "wav")]
+            FormatSamples::WavUnsupportedSampleBits(sample_bits) => {
+                Some(Err(FormatError::WavUnsupportedSampleBits(sample_bits)))
             }
 
             #[cfg(feature = "caf_alac")]
@@ -565,10 +601,18 @@ impl std::error::Error for FormatError {
         match *self {
             #[cfg(feature = "flac")]
             FormatError::Flac(ref err) => std::error::Error::description(err),
+            #[cfg(feature = "flac")]
+            FormatError::FlacUnsupportedSampleBits(_) => {
+                "More than 32 bits per sample are not supported for Flac"
+            }
             #[cfg(feature = "ogg_vorbis")]
             FormatError::OggVorbis(ref err) => std::error::Error::description(err),
             #[cfg(feature = "wav")]
             FormatError::Wav(ref err) => std::error::Error::description(err),
+            #[cfg(feature = "wav")]
+            FormatError::WavUnsupportedSampleBits(_) => {
+                "Only 8, 16, 24, 32 bits supported for integer wave"
+            }
             #[cfg(feature = "caf")]
             FormatError::Caf(ref err) => std::error::Error::description(err),
             #[cfg(feature = "alac")]
@@ -579,10 +623,14 @@ impl std::error::Error for FormatError {
         match *self {
             #[cfg(feature = "flac")]
             FormatError::Flac(ref err) => Some(err),
+            #[cfg(feature = "flac")]
+            FormatError::FlacUnsupportedSampleBits(_) => None,
             #[cfg(feature = "ogg_vorbis")]
             FormatError::OggVorbis(ref err) => Some(err),
             #[cfg(feature = "wav")]
             FormatError::Wav(ref err) => Some(err),
+            #[cfg(feature = "wav")]
+            FormatError::WavUnsupportedSampleBits(_) => None,
             #[cfg(feature = "caf")]
             FormatError::Caf(ref err) => Some(err),
             #[cfg(feature = "alac")]
@@ -613,10 +661,18 @@ impl std::fmt::Display for FormatError {
         match *self {
             #[cfg(feature = "flac")]
             FormatError::Flac(ref err) => err.fmt(f),
+            #[cfg(feature = "flac")]
+            FormatError::FlacUnsupportedSampleBits(sample_bits) => {
+                write!(f, "{} sample bits not supported for flac", sample_bits)
+            }
             #[cfg(feature = "ogg_vorbis")]
             FormatError::OggVorbis(ref err) => err.fmt(f),
             #[cfg(feature = "wav")]
             FormatError::Wav(ref err) => err.fmt(f),
+            #[cfg(feature = "wav")]
+            FormatError::WavUnsupportedSampleBits(sample_bits) => {
+                write!(f, "{} sample bits not supported for wav", sample_bits)
+            }
             #[cfg(feature = "caf")]
             FormatError::Caf(ref err) => err.fmt(f),
             #[cfg(feature = "alac")]
