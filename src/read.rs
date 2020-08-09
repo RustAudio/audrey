@@ -64,7 +64,10 @@ where
     R: 'a + std::io::Read + std::io::Seek,
 {
     #[cfg(feature = "flac")]
-    Flac(claxon::FlacSamples<&'a mut claxon::input::BufferedReader<R>>),
+    Flac {
+        flac_samples: claxon::FlacSamples<&'a mut claxon::input::BufferedReader<R>>,
+        bits_per_sample: u32,
+    },
 
     #[cfg(feature = "ogg_vorbis")]
     OggVorbis {
@@ -330,7 +333,10 @@ where
     {
         let format = match *self {
             #[cfg(feature = "flac")]
-            Reader::Flac(ref mut reader) => FormatSamples::Flac(reader.samples()),
+            Reader::Flac(ref mut reader) => FormatSamples::Flac {
+                bits_per_sample: reader.streaminfo().bits_per_sample,
+                flac_samples: reader.samples(),
+            },
 
             #[cfg(feature = "ogg_vorbis")]
             Reader::OggVorbis(ref mut reader) => FormatSamples::OggVorbis {
@@ -399,10 +405,15 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.format {
             #[cfg(feature = "flac")]
-            FormatSamples::Flac(ref mut flac_samples) => flac_samples.next().map(|sample| {
+            FormatSamples::Flac { ref mut flac_samples, bits_per_sample } => flac_samples.next().map(|sample| {
                 sample
                     .map_err(FormatError::Flac)
-                    .map(sample::Sample::to_sample)
+                    .and_then(|sample| match bits_per_sample {
+                        8 => Ok(sample::Sample::to_sample(sample as i8)),
+                        16 => Ok(sample::Sample::to_sample(sample as i16)),
+                        32 => Ok(sample::Sample::to_sample(sample)),
+                        _ => Err(FormatError::Flac(claxon::Error::Unsupported("Unsupported bit depth"))),
+                    })
             }),
 
             #[cfg(feature = "ogg_vorbis")]
