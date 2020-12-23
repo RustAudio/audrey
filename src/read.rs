@@ -13,22 +13,22 @@ use lewton;
 
 /// Types to which read samples may be converted via the `Reader::samples` method.
 pub trait Sample:
-    sample::Sample
-    + sample::FromSample<i8>
-    + sample::FromSample<i16>
-    + sample::FromSample<sample::I24>
-    + sample::FromSample<i32>
-    + sample::FromSample<f32>
+    dasp_sample::Sample
+    + dasp_sample::FromSample<i8>
+    + dasp_sample::FromSample<i16>
+    + dasp_sample::FromSample<dasp_sample::I24>
+    + dasp_sample::FromSample<i32>
+    + dasp_sample::FromSample<f32>
 {
 }
 
 impl<T> Sample for T where
-    T: sample::Sample
-        + sample::FromSample<i8>
-        + sample::FromSample<i16>
-        + sample::FromSample<sample::I24>
-        + sample::FromSample<i32>
-        + sample::FromSample<f32>
+    T: dasp_sample::Sample
+        + dasp_sample::FromSample<i8>
+        + dasp_sample::FromSample<i16>
+        + dasp_sample::FromSample<dasp_sample::I24>
+        + dasp_sample::FromSample<i32>
+        + dasp_sample::FromSample<f32>
 {
 }
 
@@ -108,7 +108,7 @@ enum WavSamples<'a, R: 'a> {
 pub struct Frames<'a, R, F>
 where
     R: 'a + std::io::Read + std::io::Seek,
-    F: sample::Frame,
+    F: dasp_frame::Frame,
 {
     samples: Samples<'a, R, F::Sample>,
     frame: std::marker::PhantomData<F>,
@@ -402,7 +402,7 @@ where
     /// channels and automatically convert to `F`'s number of channels while reading.
     pub fn frames<F>(&mut self) -> Frames<R, F>
     where
-        F: sample::Frame,
+        F: dasp_frame::Frame,
         F::Sample: Sample,
     {
         Frames {
@@ -428,7 +428,7 @@ where
                 sample
                     .map_err(FormatError::Flac)
                     .map(|sample| sample << (32 - sample_bits))
-                    .map(sample::Sample::to_sample)
+                    .map(dasp_sample::Sample::to_sample)
             }),
 
             #[cfg(feature = "flac")]
@@ -444,7 +444,7 @@ where
             } => loop {
                 // Convert and return any pending samples.
                 if *index < buffer.len() {
-                    let sample = sample::Sample::to_sample(buffer[*index]);
+                    let sample = dasp_sample::Sample::to_sample(buffer[*index]);
                     *index += 1;
                     return Some(Ok(sample));
                 }
@@ -467,7 +467,7 @@ where
                         $samples.next().map(|sample| {
                             sample
                                 .map_err(FormatError::Wav)
-                                .map(sample::Sample::to_sample)
+                                .map(dasp_sample::Sample::to_sample)
                         })
                     }};
                 }
@@ -478,8 +478,8 @@ where
                     WavSamples::I24(ref mut samples) => samples.next().map(|sample| {
                         sample
                             .map_err(FormatError::Wav)
-                            .map(sample::I24::new_unchecked)
-                            .map(sample::Sample::to_sample)
+                            .map(dasp_sample::I24::new_unchecked)
+                            .map(dasp_sample::Sample::to_sample)
                     }),
                     WavSamples::I32(ref mut samples) => next_sample!(samples),
                     WavSamples::F32(ref mut samples) => next_sample!(samples),
@@ -499,7 +499,7 @@ where
             } => loop {
                 // Convert and return any pending samples.
                 if *index < buffer.len() {
-                    let sample = sample::Sample::to_sample(buffer[*index]);
+                    let sample = dasp_sample::Sample::to_sample(buffer[*index]);
                     *index += 1;
                     return Some(Ok(sample));
                 }
@@ -521,7 +521,7 @@ where
 impl<'a, R, F> Iterator for Frames<'a, R, F>
 where
     R: std::io::Read + std::io::Seek,
-    F: sample::Frame,
+    F: dasp_frame::Frame,
     F::Sample: Sample,
 {
     type Item = Result<F, FormatError>;
@@ -537,11 +537,11 @@ where
             Some(Ok(sample)) => sample,
             Some(Err(error)) => {
                 result = FrameConstruction::Err(error);
-                <F::Sample as sample::Sample>::equilibrium()
+                <F::Sample as dasp_sample::Sample>::EQUILIBRIUM
             }
             None => {
                 result = FrameConstruction::NotEnoughSamples;
-                <F::Sample as sample::Sample>::equilibrium()
+                <F::Sample as dasp_sample::Sample>::EQUILIBRIUM
             }
         });
 
