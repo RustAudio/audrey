@@ -19,7 +19,7 @@ fn main() {
         .chain(sine_ogg_vorbis.frames::<[i16; 2]>())
         .chain(sine_wav.frames::<[i16; 2]>())
         .map(Result::unwrap)
-        .map(|f| audrey::sample::Frame::scale_amp(f, 0.25)) // Scale down the amp to a friendly level.
+        .map(|f| audrey::dasp_frame::Frame::scale_amp(f, 0.25)) // Scale down the amp to a friendly level.
         .collect::<Vec<_>>();
     let mut sine = sine_buffer.iter().cloned().cycle();
 
@@ -43,7 +43,7 @@ fn main() {
     // A function for writing to the `cpal::Buffer`, whatever the default sample type may be.
     fn write_to_buffer<S, I>(mut buffer: cpal::OutputBuffer<S>, channels: usize, sine: &mut I)
     where
-        S: cpal::Sample + audrey::sample::FromSample<i16>,
+        S: cpal::Sample + audrey::dasp_sample::FromSample<i16>,
         I: Iterator<Item = [i16; 2]>,
     {
         match channels {
@@ -51,7 +51,7 @@ fn main() {
             1 => {
                 for (frame, sine_frame) in buffer.chunks_mut(channels).zip(sine) {
                     let sum = sine_frame[0] + sine_frame[1];
-                    frame[0] = audrey::sample::Sample::to_sample(sum);
+                    frame[0] = audrey::dasp_sample::Sample::to_sample(sum);
                 }
             }
 
@@ -59,7 +59,7 @@ fn main() {
             2 => {
                 for (frame, sine_frame) in buffer.chunks_mut(channels).zip(sine) {
                     for (sample, &sine_sample) in frame.iter_mut().zip(&sine_frame) {
-                        *sample = audrey::sample::Sample::to_sample(sine_sample);
+                        *sample = audrey::dasp_sample::Sample::to_sample(sine_sample);
                     }
                 }
             }

@@ -18,7 +18,8 @@ hound = { optional = true, version = "3" }
 lewton = { optional = true, version = "0.9" }
 caf = { optional = true, version = "0.1" }
 alac = { optional = true, version = "0.5" }
-sample = "0.10"
+dasp_sample = "0.11.0"
+dasp_frame = "0.11.0"
 
 [dev-dependencies]
 cpal = "0.10"
