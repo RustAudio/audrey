@@ -1,5 +1,5 @@
-pub extern crate dasp_sample;
 pub extern crate dasp_frame;
+pub extern crate dasp_sample;
 
 #[cfg(feature = "alac")]
 pub extern crate alac;
