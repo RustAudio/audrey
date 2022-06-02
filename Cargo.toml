@@ -15,7 +15,7 @@ edition = "2018"
 [dependencies]
 claxon = { optional = true, version = "0.4" }
 hound = { optional = true, version = "3" }
-lewton = { optional = true, version = "0.9" }
+lewton = { optional = true, version = "0.10" }
 caf = { optional = true, version = "0.1" }
 alac = { optional = true, version = "0.5" }
 dasp_sample = "0.11.0"
